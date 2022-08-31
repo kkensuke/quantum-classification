@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from quantum_classifier import *
+from quantum_classification import *
 
 
 def train_each_circuit(

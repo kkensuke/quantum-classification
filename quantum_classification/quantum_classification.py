@@ -1,6 +1,3 @@
-import sys
-sys.path.append("/Users/kensuke/github/physics/qc/quantum-computation-ref/venv/lib/python3.8/site-packages")
-
 import matplotlib.pyplot as plt
 import pennylane as qml
 from pennylane import numpy as np

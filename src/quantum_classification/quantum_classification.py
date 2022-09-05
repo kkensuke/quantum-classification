@@ -201,7 +201,7 @@ class QuantumClassifier:
 
     def relabel(self, outputs):
         """Relabel the outputs.
-        i.e, 1,2,4,5,7 -> 0,1,2,3,4
+        i.e., 1,2,4,5,7 -> 0,1,2,3,4
             -2,-1,0,1,2 -> 0,1,2,3,4
         """
         set_outputs = set(self.outputs)

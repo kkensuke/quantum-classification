@@ -232,9 +232,14 @@ class QuantumClassifier:
 
         if self.cost_type == "MSE":
             for (pd, l) in zip(predictions, one_hot_outputs):
+                '''
                 # mulitple by l[j] to make it similar to the cross entropy cost
                 results.append(
                     np.sum( [ l[j] * (l[j] - pd[j]) ** 2 for j in range(self.nlabels) ] )
+                )
+                '''
+                results.append(
+                    np.sum( [ (l[j] - pd[j]) ** 2 for j in range(self.nlabels) ] )
                 )
         elif self.cost_type == "LOG":
             for (pd, l) in zip(predictions, one_hot_outputs):

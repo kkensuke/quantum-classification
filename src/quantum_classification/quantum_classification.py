@@ -28,9 +28,10 @@ class QuantumClassifier:
             nqubits (int): the number of qubits in the circuit
             embedding_nlayers (int): the number of layers of embedding (except for APE)
             ansatz_nlayers (int): the number of layers of ansatz
-            embedding_type (str): type of embedding circuit
-            ansatz_type (str): the types of ansatz circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE),
-                                                            Classically Hard Embedding (CHE), Amplitude Embedding (APE)
+            embedding_type (str): type of embedding circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE),
+                                                            Classically Hard Embedding (CHE), Amplitude Embedding (APE).
+            ansatz_type (str): the types of ansatz circuit; Tensor Product Ansatz (TPA), Hardware Efficient Ansatz (HEA),
+                                                            Strongly Entangling Ansatz (SEA).
             cost_type (str): the types of cost function; Mean Squared Error (MSE), Cross Entropy (LOG)
             shots (int): the number of shots
             stepsize (float): the stepsize of optimization

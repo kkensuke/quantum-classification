@@ -76,14 +76,14 @@ class QuantumClassifier:
 
 
         if (
-            self.ansatz_type == "TPA"
-            or self.ansatz_type == "HEA"
-            or self.ansatz_type == "SEA"
+            self.ansatz_type == "TPE"
+            or self.ansatz_type == "HEE"
+            or self.ansatz_type == "CHE"
         ):
             if self.input_size <= self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to  nqubits when ansatz_type is TPA, HEA, or SEA")
+                raise ValueError("inputs_size must be less than or equal to  nqubits when ansatz_type is TPE, HEE, or CHE")
         elif self.ansatz_type == "APE":
             if self.input_size <= 2**self.nqubits:
                 pass

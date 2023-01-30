@@ -113,7 +113,7 @@ class QuantumClassifier:
             for _ in range(self.embedding_nlayers):
                 for i in range(self.input_size):
                     qml.RX(input[i], wires=i)
-                for i in range(self.input_size - 1):
+                for i in range(self.nqubits - 1):
                     qml.CNOT(wires=[i, i + 1])
         elif self.embedding_type == "CHE":
             for _ in range(self.embedding_nlayers):
@@ -128,7 +128,7 @@ class QuantumClassifier:
         elif self.embedding_type == "APE":
             qml.AmplitudeEmbedding(
                 features=input,
-                wires=range(self.input_size),
+                wires=range(self.nqubits),
                 pad_with=1,
                 normalize=True,
             )

@@ -226,7 +226,7 @@ class QuantumClassifier:
         circuit = self.make_circuit()
         one_hot_outputs = self.one_hot()
 
-        # Since using all data takes long. Seems better to split into batches
+        # Seems better to split into batches
         predictions = self.softmax( [SOFTMAX_SCALE * circuit(params, x) for x in self.inputs] )
 
         results = []

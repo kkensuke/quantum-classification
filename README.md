@@ -1,7 +1,7 @@
 # Quantum Classification
 
-This is a Quantum machine learning simulator using Pennylane.
+This repository contains the code for Quantum machine learning using Pennylane.
 
-`classical_and_quantum_classifier.ipynb` compares quantum classification with the classical one using a test dataset (OR dataset). `quantum_classifier.ipynb` sees the trainability of quantum classification using more practical datasets.
+We compare quantum classification with classical classification using a test dataset (OR dataset) in `classical_and_quantum_classifier.ipynb`, and also check the trainability of quantum classification for more practical datasets in `quantum_classifier.ipynb`.
 
-`circuit_structure_effect_on_trainability.ipynb` checks the effect of circuit structures and cost functions on the trainability of QML.
+We see the effect of quantum circuit structures on the trainability of QML in `circuit_structure_effect_on_trainability.ipynb`.

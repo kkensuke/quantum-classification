@@ -3,7 +3,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 INPUT_SCALE = np.pi / 2
-SOFTMAX_SCALE = 10
 
 
 class QuantumClassifier:
@@ -28,7 +27,7 @@ class QuantumClassifier:
             nqubits (int): the number of qubits in the circuit
             embedding_nlayers (int): the number of layers of embedding (except for APE)
             ansatz_nlayers (int): the number of layers of ansatz
-            embedding_type (str): type of embedding circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE),
+            embedding_type (str): the type of embedding circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE),
                                                             Classically Hard Embedding (CHE), Amplitude Embedding (APE).
             ansatz_type (str): the types of ansatz circuit; Tensor Product Ansatz (TPA), Hardware Efficient Ansatz (HEA),
                                                             Strongly Entangling Ansatz (SEA).
@@ -76,19 +75,19 @@ class QuantumClassifier:
 
 
         if (
-            self.ansatz_type == "TPE"
-            or self.ansatz_type == "HEE"
-            or self.ansatz_type == "CHE"
+            self.embedding_type == "TPE"
+            or self.embedding_type == "HEE"
+            or self.embedding_type == "CHE"
         ):
             if self.input_size <= self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to  nqubits when ansatz_type is TPE, HEE, or CHE")
-        elif self.ansatz_type == "APE":
+                raise ValueError("inputs_size must be less than or equal to  nqubits when embedding_type is TPE, HEE, or CHE")
+        elif self.embedding_type == "APE":
             if self.input_size <= 2**self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to 2^nqubits when ansatz_type is APE")
+                raise ValueError("inputs_size must be less than or equal to 2^nqubits when embedding_type is APE")
         else:
             pass
 
@@ -98,40 +97,102 @@ class QuantumClassifier:
         else:
             raise ValueError("cost_type must be MSE or LOG")
 
+    def TPE(self, input):
+        """ Tensor Product Embedding """
+        for _ in range(self.embedding_nlayers):
+            for i in range(self.input_size):
+                qml.RX(input[i], wires=i)
+                qml.RY(input[i], wires=i)
+
+    def ALE(self, input):
+        """ Alternating Layered Embedding """
+        self.count = 0
+        for _ in range(self.embedding_nlayers):
+            if self.count % 2 == 0:
+                for i in range(self.input_size):
+                    qml.RX(input[i], 2*i)
+                    qml.RY(input[i], 2*i)
+                    qml.RX(input[i], 2*i+1)
+                    qml.RY(input[i], 2*i+1)
+                    qml.cz(2*i, 2*i+1)
+                qml.barrier()
+            else:
+                for i in range(self.input_size):
+                    qml.RX(input[i], 2*i+1)
+                    qml.RY(input[i], 2*i+1)
+                    qml.RX(input[i], 2*(i+1))
+                    qml.RY(input[i], 2*(i+1))
+                    qml.cz(2*i+1, 2*(i+1))
+                qml.barrier()
+            self.count += 1
+
+    def HEE(self, input):
+        """ Hardware Efficient Embedding """
+        for _ in range(self.embedding_nlayers):
+            for i in range(self.input_size):
+                qml.RX(input[i], wires=i)
+                qml.RY(input[i], wires=i)
+            for i in range(self.nqubits - 1):
+                qml.CNOT(wires=[i, i + 1])
+
+    def CHE(self, input):
+        """ Classically Hard Embedding """
+        for _ in range(self.embedding_nlayers):
+            for i in range(self.input_size):
+                qml.Hadamard(wires=i)
+                qml.RZ(input[i], wires=i)
+            for i in range(self.input_size - 1):
+                for j in range(i + 1, self.input_size):
+                    qml.CNOT(wires=[i, j])
+                    qml.RZ(input[i] * input[j], wires=j)
+                    qml.CNOT(wires=[i, j])
+
+    def MPS_block(weights, wires):
+        qml.RX(weights[0], wires=wires[0])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RX(weights[0], wires=wires[0])
+        qml.RY(weights[0], wires=wires[0])
+        qml.CNOT(wires=[wires[0],wires[1]])
+
+    def MPS(self, input):
+        """ Matrix Product State Embedding """
+        n_wires = self.input_size + 1
+        n_block_wires = 2
+        n_params_block = 1
+
+        template_weights = []
+        for i in range(self.input_size):
+            template_weights.append([input[i]])
+
+        for _ in range(self.embedding_nlayers):
+            qml.MPS(range(n_wires), n_block_wires, self.MPS_block, n_params_block, template_weights)
+
+    def APE(self, input):
+        """ Angle Embedding """
+        qml.AmplitudeEmbedding(
+            features=input,
+            wires=range(self.nqubits),
+            pad_with=1,
+            normalize=True,
+        )
+
     def embedding(self, input):
         """Embedding templates for the variational circuit.
         Args:
             input(array[float]): input data
         """
-
         if self.embedding_type == "TPE":
-            for _ in range(self.embedding_nlayers):
-                for i in range(self.input_size):
-                    qml.RX(input[i], wires=i)
-                    qml.RY(input[i], wires=i)
+            self.TPE(input)
+        elif self.embedding_type == "ALE":
+            self.ALE(input)
         elif self.embedding_type == "HEE":
-            for _ in range(self.embedding_nlayers):
-                for i in range(self.input_size):
-                    qml.RX(input[i], wires=i)
-                for i in range(self.nqubits - 1):
-                    qml.CNOT(wires=[i, i + 1])
+            self.HEE(input)
         elif self.embedding_type == "CHE":
-            for _ in range(self.embedding_nlayers):
-                for i in range(self.input_size):
-                    qml.Hadamard(wires=i)
-                    qml.RZ(input[i], wires=i)
-                for i in range(self.input_size - 1):
-                    for j in range(i + 1, self.input_size):
-                        qml.CNOT(wires=[i, j])
-                        qml.RZ(input[i] * input[j], wires=j)
-                        qml.CNOT(wires=[i, j])
+            self.CHE(input)
+        elif self.embedding_type == "MPS":
+            self.MPS(input)
         elif self.embedding_type == "APE":
-            qml.AmplitudeEmbedding(
-                features=input,
-                wires=range(self.nqubits),
-                pad_with=1,
-                normalize=True,
-            )
+            self.APE(input)
         elif self.embedding_type == "NON":
             pass
         else:
@@ -154,7 +215,7 @@ class QuantumClassifier:
         return params
 
     def ansatz(self, params):
-        """Ansatz templates for the variational circuit."""
+        """Ansatz templates for a variational circuit."""
 
         if self.ansatz_type == "TPA":
             for i in range(self.ansatz_nlayers):
@@ -191,12 +252,6 @@ class QuantumClassifier:
         circuit = qml.QNode(func, dev)
         return circuit
 
-    def softmax(self, x):  # avoid exp overflow
-        x = np.array(x)
-        x -= x.max(axis=1, keepdims=True)
-        x_exp = np.exp(x)
-        return x_exp / np.sum(x_exp, axis=1, keepdims=True)
-
     def np_log(self, x):  # avoid log(0)
         return np.log(np.clip(a=x, a_min=1e-10, a_max=1e10))
 
@@ -217,6 +272,12 @@ class QuantumClassifier:
         return np.eye(self.nlabels)[self.relabel(self.outputs)]
 
     def cost(self, params):
+        """Cost function of the variational circuit.
+        Args:
+            params (array[float]): array of ansatz parameters
+        Returns:
+            cost (float)
+        """
         circuit = self.make_circuit()
         relabeled_outputs = self.relabel(self.outputs)
 

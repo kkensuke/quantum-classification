@@ -36,7 +36,8 @@ class QuantumClassifier:
             stepsize (float): the stepsize of optimization
             steps (int): the number of steps of optimization
         """
-        # there are degrees of freedom in how to convert the inputs into angles (np.arcsin(input[i]) or np.arccos(input[i]**2) ref. QCL)
+        # there are degrees of freedom in how to convert the inputs into angles
+        # np.arcsin(input[i]) or np.arccos(input[i]**2) in ref. QCL
         self.inputs = np.array(inputs * INPUT_SCALE)
         self.outputs = np.array(outputs).astype(int).ravel()
         self.input_size = len(self.inputs[0])
@@ -52,33 +53,19 @@ class QuantumClassifier:
         self.steps = steps
         self.params = None
 
-        if (
-            self.embedding_type == "TPE"
-            or self.embedding_type == "HEE"
-            or self.embedding_type == "CHE"
-            or self.embedding_type == "APE"
-            or self.embedding_type == "NON"
-        ):
+        if self.embedding_type in ("TPE","HEE","CHE","APE","NON"):
             pass
         else:
             raise ValueError("Input the correct embedding type")
 
 
-        if (
-            self.ansatz_type == "TPA"
-            or self.ansatz_type == "HEA"
-            or self.ansatz_type == "SEA"
-        ):
+        if self.ansatz_type in ("TPA","HEA","SEA"):
             pass
         else:
             raise ValueError("Input the correct ansatz type")
 
 
-        if (
-            self.embedding_type == "TPE"
-            or self.embedding_type == "HEE"
-            or self.embedding_type == "CHE"
-        ):
+        if self.embedding_type in ("TPE","HEE","CHE"):
             if self.input_size <= self.nqubits:
                 pass
             else:
@@ -92,7 +79,7 @@ class QuantumClassifier:
             pass
 
 
-        if cost_type == "MSE" or cost_type == "LOG":
+        if cost_type in ("MSE","LOG"):
             pass
         else:
             raise ValueError("cost_type must be MSE or LOG")
@@ -103,28 +90,6 @@ class QuantumClassifier:
             for i in range(self.input_size):
                 qml.RX(input[i], wires=i)
                 qml.RY(input[i], wires=i)
-
-    def ALE(self, input):
-        """ Alternating Layered Embedding """
-        self.count = 0
-        for _ in range(self.embedding_nlayers):
-            if self.count % 2 == 0:
-                for i in range(self.input_size):
-                    qml.RX(input[i], 2*i)
-                    qml.RY(input[i], 2*i)
-                    qml.RX(input[i], 2*i+1)
-                    qml.RY(input[i], 2*i+1)
-                    qml.cz(2*i, 2*i+1)
-                qml.barrier()
-            else:
-                for i in range(self.input_size):
-                    qml.RX(input[i], 2*i+1)
-                    qml.RY(input[i], 2*i+1)
-                    qml.RX(input[i], 2*(i+1))
-                    qml.RY(input[i], 2*(i+1))
-                    qml.cz(2*i+1, 2*(i+1))
-                qml.barrier()
-            self.count += 1
 
     def HEE(self, input):
         """ Hardware Efficient Embedding """
@@ -146,26 +111,6 @@ class QuantumClassifier:
                     qml.CNOT(wires=[i, j])
                     qml.RZ(input[i] * input[j], wires=j)
                     qml.CNOT(wires=[i, j])
-
-    def MPS_block(weights, wires):
-        qml.RX(weights[0], wires=wires[0])
-        qml.RY(weights[0], wires=wires[0])
-        qml.RX(weights[0], wires=wires[0])
-        qml.RY(weights[0], wires=wires[0])
-        qml.CNOT(wires=[wires[0],wires[1]])
-
-    def MPS(self, input):
-        """ Matrix Product State Embedding """
-        n_wires = self.input_size + 1
-        n_block_wires = 2
-        n_params_block = 1
-
-        template_weights = []
-        for i in range(self.input_size):
-            template_weights.append([input[i]])
-
-        for _ in range(self.embedding_nlayers):
-            qml.MPS(range(n_wires), n_block_wires, self.MPS_block, n_params_block, template_weights)
 
     def APE(self, input):
         """ Angle Embedding """
@@ -240,7 +185,6 @@ class QuantumClassifier:
             QuantumCircuit: variational quantum circuit
         """
         dev = qml.device("default.qubit", wires=self.nqubits, shots=self.shots)
-
         def func(params, input):
 
             self.embedding(input)
@@ -326,12 +270,12 @@ class QuantumClassifier:
     def accuracy(self, test_inputs, test_outputs):
         """Calculate the accuracy of the predictions by the circuit.
         Returns:
-            accuracy (float): the accuracy of the prediction
+            accuracy (float): the accuracy of the predictions
         """
         circuit = self.make_circuit()
 
         labels = np.arange(self.nlabels).astype(int)
-        predictions = [ 1 - np.sum( circuit(self.params, x)[:,0] )/self.nqubits for x in test_inputs]
+        predictions = [ 1 - np.sum( circuit(self.params, x)[:,0] )/self.nqubits for x in test_inputs ]
         predictions = np.round(predictions).astype(int)
 
         test_outputs_relabeled = self.relabel(

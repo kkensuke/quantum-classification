@@ -18,7 +18,7 @@ class QuantumClassifier:
         ansatz_type,
         cost_type,
         shots=None,
-        stepsize=0.1,
+        stepsize=0.01,
         steps=100,
     ):
         """Initialize the classifier.
@@ -54,7 +54,7 @@ class QuantumClassifier:
         self.steps = steps
         self.params = None
 
-        if self.embedding_type in ("TPE","HEE","CHE","APE","NON"):
+        if self.embedding_type in ("TPE","ALE","HEE","CHE","MPS","APE","NON"):
             pass
         else:
             raise ValueError("Input the correct embedding type")
@@ -66,11 +66,11 @@ class QuantumClassifier:
             raise ValueError("Input the correct ansatz type")
 
 
-        if self.embedding_type in ("TPE","HEE","CHE"):
+        if self.embedding_type in ("TPE","ALE","HEE","CHE","MPS"):
             if self.input_size <= self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to  nqubits when embedding_type is TPE, HEE, or CHE")
+                raise ValueError("inputs_size must be less than or equal to  nqubits when embedding_type is TPE, ALE, HEE, CHE, or MPS")
         elif self.embedding_type == "APE":
             if self.input_size <= 2**self.nqubits:
                 pass
@@ -92,6 +92,34 @@ class QuantumClassifier:
                 qml.RX(input[i], wires=i)
                 qml.RY(input[i], wires=i)
 
+    def ALE(self, input):
+        """ Alternating Layered Embedding """
+        self.count = 0
+        for _ in range(self.embedding_nlayers):
+            if self.count % 2 == 0:
+                for i in range(self.nqubits//2):
+                    qml.RX(input[i%self.input_size], 2*i)
+                    qml.RY(input[i%self.input_size], 2*i)
+                    qml.RX(input[(i+1)%self.input_size], 2*i+1)
+                    qml.RY(input[(i+1)%self.input_size], 2*i+1)
+                    qml.CZ(wires=[2*i, 2*i+1])
+            else:
+                if self.nqubits % 2 == 0:
+                    for i in range(self.nqubits//2-1):
+                        qml.RX(input[i%self.input_size], 2*i+1)
+                        qml.RY(input[i%self.input_size], 2*i+1)
+                        qml.RX(input[(i+1)%self.input_size], 2*(i+1))
+                        qml.RY(input[(i+1)%self.input_size], 2*(i+1))
+                        qml.CZ(wires=[2*i+1, 2*(i+1)])
+                else:
+                    for i in range(self.nqubits//2):
+                        qml.RX(input[i%self.input_size], 2*i+1)
+                        qml.RY(input[i%self.input_size], 2*i+1)
+                        qml.RX(input[(i+1)%self.input_size], 2*(i+1))
+                        qml.RY(input[(i+1)%self.input_size], 2*(i+1))
+                        qml.CZ(wires=[2*i+1, 2*(i+1)])
+            self.count += 1
+
     def HEE(self, input):
         """ Hardware Efficient Embedding """
         for _ in range(self.embedding_nlayers):
@@ -112,6 +140,26 @@ class QuantumClassifier:
                     qml.CNOT(wires=[i, j])
                     qml.RZ(input[i] * input[j], wires=j)
                     qml.CNOT(wires=[i, j])
+
+    def MPS_block(self, weights, wires):
+        qml.RX(weights[0], wires=wires[0])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RX(weights[1], wires=wires[1])
+        qml.RY(weights[1], wires=wires[1])
+        qml.CNOT(wires=[wires[0],wires[1]])
+
+    def MPS(self, input):
+        """ Matrix Product State Embedding """
+        n_wires = self.nqubits
+        n_block_wires = 2
+        n_params_block = 2
+
+        template_weights = []
+        for i in range(self.nqubits-1):
+            template_weights.append([input[i%self.input_size],input[(i+1)%self.input_size]])
+
+        for _ in range(self.embedding_nlayers):
+            qml.MPS(range(n_wires), n_block_wires, self.MPS_block, n_params_block, template_weights)
 
     def APE(self, input):
         """ Angle Embedding """
@@ -192,7 +240,7 @@ class QuantumClassifier:
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            return [ qml.expval(qml.PauliZ(wires=i)) for i in range(self.nlabels) ]
+            return [ qml.expval(qml.PauliZ(wires=self.nqubits-i)) for i in range(self.nlabels) ]
 
         circuit = qml.QNode(func, dev)
         return circuit

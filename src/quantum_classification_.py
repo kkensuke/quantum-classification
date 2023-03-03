@@ -239,7 +239,7 @@ class QuantumClassifier:
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            return [qml.probs(wires=self.nqubits-i) for i in range(self.nlabels)]
+            return [qml.probs(wires=self.nqubits-1-i) for i in range(self.nlabels)]
 
         circuit = qml.QNode(func, dev)
         return circuit

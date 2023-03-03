@@ -240,7 +240,7 @@ class QuantumClassifier:
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            return [ qml.expval(qml.PauliZ(wires=self.nqubits-1-i) for i in range(self.nlabels) ]
+            return [ qml.expval(qml.PauliZ(wires=self.nqubits-1-i)) for i in range(self.nlabels) ]
 
         circuit = qml.QNode(func, dev)
         return circuit

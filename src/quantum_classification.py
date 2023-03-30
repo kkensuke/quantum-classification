@@ -156,7 +156,7 @@ class QuantumClassifier:
 
         template_weights = []
         for i in range(self.nqubits-1):
-            template_weights.append([input[i%self.input_size],input[(i+1)%self.input_size]])
+            template_weights.append([input[i%self.input_size], input[(i+1)%self.input_size]])
 
         for _ in range(self.embedding_nlayers):
             qml.MPS(range(n_wires), n_block_wires, self.MPS_block, n_params_block, template_weights)
@@ -210,7 +210,6 @@ class QuantumClassifier:
 
     def ansatz(self, params):
         """Ansatz templates for a variational circuit."""
-
         if self.ansatz_type == "TPA":
             for i in range(self.ansatz_nlayers):
                 for j in range(self.nqubits):
@@ -267,7 +266,7 @@ class QuantumClassifier:
         outputs_ = np.array( [ relabel_dict[x] for x in outputs ] ).astype(int)
         return outputs_
 
-    def one_hot(self):
+    def to_one_hot(self):
         return np.eye(self.nlabels)[self.relabel(self.outputs)]
 
     def cost(self, params):
@@ -278,7 +277,7 @@ class QuantumClassifier:
             cost (float)
         """
         circuit = self.make_circuit()
-        one_hot_outputs = self.one_hot()
+        one_hot_outputs = self.to_one_hot()
 
         # Seems better to split into batches
         predictions = self.softmax( [ SOFTMAX_SCALE * circuit(params, x) for x in self.inputs ] )

@@ -4,21 +4,21 @@ from quantum_classification import *
 
 
 def train_each_circuit(
-    x_train,
-    y_train,
-    x_test,
-    y_test,
-    nqubits,
-    embedding_nlayers,
-    ansatz_nlayers,
-    embedding_list,
-    ansatz_list,
-    cost_type,
-    draw=False,
-    shots=None,
-    stepsize=0.3,
-    steps=50,
-):
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        nqubits,
+        embedding_nlayers,
+        ansatz_nlayers,
+        embedding_list,
+        ansatz_list,
+        cost_type,
+        draw=False,
+        shots=None,
+        stepsize=0.3,
+        steps=50):
+
     optimized_cost_acc = []
     cost_all = []
 

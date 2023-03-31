@@ -21,7 +21,7 @@ class QuantumClassifier:
         stepsize=0.01,
         steps=100,
     ):
-        """Initialize the classifier.
+        """Initialize a classifier.
         Args:
             inputs (array[float]): array of input data
             outputs (array[int]): array of output data

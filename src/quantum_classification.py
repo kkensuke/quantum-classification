@@ -197,9 +197,7 @@ class QuantumClassifier:
         Returns:
             params (array[float]): array of parameters
         """
-        if self.ansatz_type == "TPA":
-            params = np.random.uniform(0, np.pi, size=self.nqubits * self.ansatz_nlayers)
-        elif self.ansatz_type == "HEA":
+        if self.ansatz_type in ("TPA", "HEA"):
             params = np.random.uniform(0, np.pi, size=self.nqubits * self.ansatz_nlayers)
         elif self.ansatz_type == "SEA":
             shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
@@ -239,7 +237,7 @@ class QuantumClassifier:
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            return [ qml.expval(qml.PauliZ(wires=self.nqubits-1-i)) for i in range(self.nlabels) ]
+            return [ qml.expval(qml.PauliZ(wires=self.nqubits - i - 1)) for i in range(self.nlabels) ]
 
         circuit = qml.QNode(func, dev)
         return circuit
@@ -298,7 +296,7 @@ class QuantumClassifier:
         elif self.cost_type == "LOG":
             for (pd, l) in zip(predictions, one_hot_outputs):
                 cost_value_list.append(
-                    -np.sum( [ l[j] * self.np_log(pd[j]) for j in range(self.nlabels) ] )
+                    - np.sum( [ l[j] * self.np_log(pd[j]) for j in range(self.nlabels) ] )
                 )
         else:
             pass

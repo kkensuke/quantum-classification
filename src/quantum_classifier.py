@@ -80,7 +80,7 @@ class QuantumClassifier:
             pass
 
 
-        if cost_type in ("MSE","LOG"):
+        if self.cost_type in ("MSE","LOG"):
             pass
         else:
             raise ValueError("cost_type must be MSE or LOG")
@@ -310,7 +310,7 @@ class QuantumClassifier:
 
         self.cost_list = []
         for _ in range(self.steps):
-            self.params, cost_temp = opt.step_and_cost( self.cost, self.params )
+            self.params, cost_temp = opt.step_and_cost(self.cost, self.params)
             self.cost_list.append(cost_temp)
 
         # return self.params, self.cost_list
@@ -318,7 +318,7 @@ class QuantumClassifier:
     def draw_circuit(self):
         params = self.make_initial_params()
         circuit = self.make_circuit()
-        fig = qml.draw_mpl(circuit, expansion_strategy="device")( params, self.inputs[0])
+        fig = qml.draw_mpl(circuit, expansion_strategy="device")(params, self.inputs[0])
         plt.show()
 
     def plot_cost(self):

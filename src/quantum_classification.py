@@ -8,19 +8,19 @@ SOFTMAX_SCALE = 10
 
 class QuantumClassifier:
     def __init__(
-        self,
-        inputs,
-        outputs,
-        nqubits,
-        embedding_nlayers,
-        ansatz_nlayers,
-        embedding_type,
-        ansatz_type,
-        cost_type,
-        shots=None,
-        stepsize=0.01,
-        steps=100,
-    ):
+            self,
+            inputs,
+            outputs,
+            nqubits,
+            embedding_nlayers,
+            ansatz_nlayers,
+            embedding_type,
+            ansatz_type,
+            cost_type,
+            shots=None,
+            stepsize=0.01,
+            steps=100,
+        ):
         """Initialize a classifier.
         Args:
             inputs (array[float]): array of input data
@@ -284,12 +284,6 @@ class QuantumClassifier:
 
         if self.cost_type == "MSE":
             for (pd, l) in zip(predictions, one_hot_outputs):
-                '''
-                # mulitple by l[j] to make it similar to the cross entropy cost function
-                cost_value_list.append(
-                    np.sum( [ l[j] * (l[j] - pd[j]) ** 2 for j in range(self.nlabels) ] )
-                )
-                '''
                 cost_value_list.append(
                     np.sum( [ (l[j] - pd[j]) ** 2 for j in range(self.nlabels) ] )
                 )

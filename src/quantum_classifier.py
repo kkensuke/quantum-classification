@@ -253,17 +253,18 @@ class QuantumClassifier:
     def np_log(x):  # avoid log(0)
         return np.log(np.clip(a=x, a_min=1e-10, a_max=1e10))
 
-    def relabel(self, outputs):
+    @staticmethod
+    def relabel(outputs):
         """Relabel the outputs.
         e.g., 1,2,4,5,7 -> 0,1,2,3,4
             -2,-1,0,1,2 -> 0,1,2,3,4
         """
-        set_outputs = set(self.outputs)
+        set_outputs = set(outputs)
 
         relabel_dict = dict(
             zip(sorted(list(set_outputs)), range(len(set_outputs)))
         )
-        outputs_ = np.array( [ relabel_dict[x] for x in outputs ] ).astype(int)
+        outputs_ = np.array( [relabel_dict[x] for x in outputs] ).astype(int)
         return outputs_
 
     def to_one_hot(self):

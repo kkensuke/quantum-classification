@@ -35,10 +35,10 @@ class QuantumClassifier_(QuantumClassifier):
         circuit = self.make_circuit()
         relabeled_outputs = self.relabel(self.outputs)
 
-        predictions = [ 1 - np.sum( circuit(params, x)[:,0] )/self.nqubits for x in self.inputs]
+        predictions = [1 - np.sum( circuit(params, x)[:,0] )/self.nqubits for x in self.inputs]
 
         if self.cost_type == "MSE":
-            cost = np.mean(np.array( [ (l - pd) ** 2 for (pd, l) in zip(predictions, relabeled_outputs) ] ))
+            cost = np.mean(np.array( [(l - pd) ** 2 for (pd, l) in zip(predictions, relabeled_outputs)] ))
         elif self.cost_type == "LOG":
             cost = np.mean(np.array( [ - l * self.np_log(pd) for (pd, l) in zip(predictions, relabeled_outputs) ] ))
         else:

@@ -242,13 +242,15 @@ class QuantumClassifier:
         circuit = qml.QNode(func, dev)
         return circuit
 
-    def softmax(self, x):  # avoid exp overflow
+    @staticmethod
+    def softmax(x):
         x = np.array(x)
-        x -= x.max(axis=1, keepdims=True)
+        x -= x.max(axis=1, keepdims=True) # to avoid exp overflow
         x_exp = np.exp(x)
         return x_exp / np.sum(x_exp, axis=1, keepdims=True)
 
-    def np_log(self, x):  # avoid log(0)
+    @staticmethod
+    def np_log(x):  # avoid log(0)
         return np.log(np.clip(a=x, a_min=1e-10, a_max=1e10))
 
     def relabel(self, outputs):

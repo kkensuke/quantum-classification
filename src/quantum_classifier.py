@@ -28,10 +28,12 @@ class QuantumClassifier:
             nqubits (int): the number of qubits in the circuit
             embedding_nlayers (int): the number of layers of embedding (except for APE)
             ansatz_nlayers (int): the number of layers of ansatz
-            embedding_type (str): the type of embedding circuit; Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE),
-                                                            Classically Hard Embedding (CHE), Amplitude Embedding (APE).
-            ansatz_type (str): the types of ansatz circuit; Tensor Product Ansatz (TPA), Hardware Efficient Ansatz (HEA),
-                                                            Strongly Entangling Ansatz (SEA).
+            embedding_type (str): the type of embedding circuit;
+                Tensor Product Embedding (TPE), Hardware Efficient Embedding (HEE),
+                Classically Hard Embedding (CHE), Amplitude Embedding (APE).
+            ansatz_type (str): the types of ansatz circuit;
+                Tensor Product Ansatz (TPA), Hardware Efficient Ansatz (HEA),
+                Strongly Entangling Ansatz (SEA).
             cost_type (str): the types of cost function; Mean Squared Error (MSE), Cross Entropy (LOG)
             shots (int): the number of shots
             stepsize (float): the stepsize of optimization
@@ -54,19 +56,17 @@ class QuantumClassifier:
         self.steps = steps
         self.params = None
 
-        if self.embedding_type in ("TPE","ALE","HEE","CHE","MPS","APE","NON"):
+        if self.embedding_type in {"TPE", "ALE", "HEE", "CHE", "MPS", "APE", "NON"}:
             pass
         else:
             raise ValueError("Input the correct embedding type")
 
-
-        if self.ansatz_type in ("TPA","HEA","SEA"):
+        if self.ansatz_type in {"TPA", "HEA", "SEA"}:
             pass
         else:
             raise ValueError("Input the correct ansatz type")
 
-
-        if self.embedding_type in ("TPE","ALE","HEE","CHE","MPS"):
+        if self.embedding_type in {"TPE", "ALE", "HEE", "CHE", "MPS"}:
             if self.input_size <= self.nqubits:
                 pass
             else:
@@ -79,8 +79,7 @@ class QuantumClassifier:
         else:
             pass
 
-
-        if self.cost_type in ("MSE","LOG"):
+        if self.cost_type in {"MSE", "LOG"}:
             pass
         else:
             raise ValueError("cost_type must be MSE or LOG")

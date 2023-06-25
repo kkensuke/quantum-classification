@@ -340,7 +340,10 @@ class QuantumClassifier:
         plt.show()
 
     def accuracy(self, test_inputs, test_outputs):
-        """Calculate the accuracy of the predictions by the circuit.
+        """Calculate the accuracy of the predictions.
+        Args:
+            test_inputs (array[float]): array of test inputs
+            test_outputs (array[float]): array of test outputs
         Returns:
             accuracy (float): the accuracy of the predictions
         """

@@ -20,7 +20,7 @@ class QuantumClassifier:
             shots=None,
             stepsize=0.01,
             steps=100,
-        ):
+    ):
         """Initialize a classifier.
         Args:
             inputs (array[float]): array of input data
@@ -70,12 +70,14 @@ class QuantumClassifier:
             if self.input_size <= self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to  nqubits when embedding_type is TPE, ALE, HEE, CHE, or MPS")
+                raise ValueError("inputs_size must be less than or equal to  nqubits\
+                                 when embedding_type is TPE, ALE, HEE, CHE, or MPS")
         elif self.embedding_type == "APE":
             if self.input_size <= 2**self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to 2^nqubits when embedding_type is APE")
+                raise ValueError("inputs_size must be less than or equal to \
+                                 2^nqubits when embedding_type is APE")
         else:
             pass
 
@@ -145,7 +147,7 @@ class QuantumClassifier:
         qml.RY(weights[0], wires=wires[0])
         qml.RX(weights[1], wires=wires[1])
         qml.RY(weights[1], wires=wires[1])
-        qml.CNOT(wires=[wires[0],wires[1]])
+        qml.CNOT(wires=[wires[0], wires[1]])
 
     def MPS(self, input):
         """ Matrix Product State Embedding """
@@ -230,13 +232,14 @@ class QuantumClassifier:
             QuantumCircuit: variational quantum circuit
         """
         dev = qml.device("default.qubit", wires=self.nqubits, shots=self.shots)
+        
         def func(params, input):
 
             self.embedding(input)
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            return [ qml.expval(qml.PauliZ(wires=self.nqubits - i - 1)) for i in range(self.nlabels) ]
+            return [qml.expval(qml.PauliZ(wires=self.nqubits - i - 1)) for i in range(self.nlabels)]
 
         circuit = qml.QNode(func, dev)
         return circuit
@@ -244,7 +247,7 @@ class QuantumClassifier:
     @staticmethod
     def softmax(x):
         x = np.array(x)
-        x -= x.max(axis=1, keepdims=True) # to avoid exp overflow
+        x -= x.max(axis=1, keepdims=True)  # to avoid exp overflow
         x_exp = np.exp(x)
         return x_exp / np.sum(x_exp, axis=1, keepdims=True)
 
@@ -263,7 +266,7 @@ class QuantumClassifier:
         relabel_dict = dict(
             zip(sorted(list(set_outputs)), range(len(set_outputs)))
         )
-        outputs_ = np.array( [relabel_dict[x] for x in outputs] ).astype(int)
+        outputs_ = np.array([relabel_dict[x] for x in outputs]).astype(int)
         return outputs_
 
     def to_one_hot(self):
@@ -280,19 +283,25 @@ class QuantumClassifier:
         one_hot_outputs = self.to_one_hot()
 
         # Seems better to split into batches
-        predictions = self.softmax( [ SOFTMAX_SCALE * circuit(params, x) for x in self.inputs ] )
+        predictions = self.softmax(
+            [SOFTMAX_SCALE * circuit(params, x) for x in self.inputs]
+        )
 
         cost_value_list = []
 
         if self.cost_type == "MSE":
             for (pd, l) in zip(predictions, one_hot_outputs):
                 cost_value_list.append(
-                    np.sum( [ (l[j] - pd[j]) ** 2 for j in range(self.nlabels) ] )
+                    np.sum(
+                        [(l[j] - pd[j])**2 for j in range(self.nlabels)]
+                    )
                 )
         elif self.cost_type == "LOG":
             for (pd, l) in zip(predictions, one_hot_outputs):
                 cost_value_list.append(
-                    - np.sum( [ l[j] * self.np_log(pd[j]) for j in range(self.nlabels) ] )
+                    -np.sum(
+                        [l[j] * self.np_log(pd[j]) for j in range(self.nlabels)]
+                    )
                 )
         else:
             pass
@@ -320,8 +329,7 @@ class QuantumClassifier:
     def draw_circuit(self):
         params = self.make_initial_params()
         circuit = self.make_circuit()
-        fig = qml.draw_mpl(circuit, expansion_strategy="device")(params, self.inputs[0])
-        plt.show()
+        return qml.draw_mpl(circuit, expansion_strategy="device")(params, self.inputs[0])
 
     def plot_cost(self):
         label = f"{self.embedding_type}, {self.ansatz_type}"
@@ -339,7 +347,9 @@ class QuantumClassifier:
         circuit = self.make_circuit()
 
         labels = np.arange(self.nlabels).astype(int)
-        predictions = self.softmax( [ SOFTMAX_SCALE * circuit(self.params, x) for x in test_inputs * INPUT_SCALE ] )
+        predictions = self.softmax(
+            [SOFTMAX_SCALE * circuit(self.params, x) for x in test_inputs * INPUT_SCALE]
+        )
         predictions = np.round(predictions).astype(int)
         predictions = predictions @ labels  # one-hot to original label
 

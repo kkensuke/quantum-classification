@@ -70,14 +70,18 @@ class QuantumClassifier:
             if self.input_size <= self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to  nqubits\
-                                 when embedding_type is TPE, ALE, HEE, CHE, or MPS")
+                raise ValueError(
+                    "inputs_size must be less than or equal to  nqubits\
+                                 when embedding_type is TPE, ALE, HEE, CHE, or MPS"
+                )
         elif self.embedding_type == "APE":
             if self.input_size <= 2**self.nqubits:
                 pass
             else:
-                raise ValueError("inputs_size must be less than or equal to \
-                                 2^nqubits when embedding_type is APE")
+                raise ValueError(
+                    "inputs_size must be less than or equal to \
+                                 2^nqubits when embedding_type is APE"
+                )
         else:
             pass
 
@@ -87,42 +91,42 @@ class QuantumClassifier:
             raise ValueError("cost_type must be MSE or LOG")
 
     def TPE(self, input):
-        """ Tensor Product Embedding """
+        """Tensor Product Embedding"""
         for _ in range(self.embedding_nlayers):
             for i in range(self.input_size):
                 qml.RX(input[i], wires=i)
                 qml.RY(input[i], wires=i)
 
     def ALE(self, input):
-        """ Alternating Layered Embedding """
+        """Alternating Layered Embedding"""
         self.count = 0
         for _ in range(self.embedding_nlayers):
             if self.count % 2 == 0:
-                for i in range(self.nqubits//2):
-                    qml.RX(input[i%self.input_size], 2*i)
-                    qml.RY(input[i%self.input_size], 2*i)
-                    qml.RX(input[(i+1)%self.input_size], 2*i+1)
-                    qml.RY(input[(i+1)%self.input_size], 2*i+1)
-                    qml.CZ(wires=[2*i, 2*i+1])
+                for i in range(self.nqubits // 2):
+                    qml.RX(input[i % self.input_size], 2 * i)
+                    qml.RY(input[i % self.input_size], 2 * i)
+                    qml.RX(input[(i + 1) % self.input_size], 2 * i + 1)
+                    qml.RY(input[(i + 1) % self.input_size], 2 * i + 1)
+                    qml.CZ(wires=[2 * i, 2 * i + 1])
             else:
                 if self.nqubits % 2 == 0:
-                    for i in range(self.nqubits//2-1):
-                        qml.RX(input[i%self.input_size], 2*i+1)
-                        qml.RY(input[i%self.input_size], 2*i+1)
-                        qml.RX(input[(i+1)%self.input_size], 2*(i+1))
-                        qml.RY(input[(i+1)%self.input_size], 2*(i+1))
-                        qml.CZ(wires=[2*i+1, 2*(i+1)])
+                    for i in range(self.nqubits // 2 - 1):
+                        qml.RX(input[i % self.input_size], 2 * i + 1)
+                        qml.RY(input[i % self.input_size], 2 * i + 1)
+                        qml.RX(input[(i + 1) % self.input_size], 2 * (i + 1))
+                        qml.RY(input[(i + 1) % self.input_size], 2 * (i + 1))
+                        qml.CZ(wires=[2 * i + 1, 2 * (i + 1)])
                 else:
-                    for i in range(self.nqubits//2):
-                        qml.RX(input[i%self.input_size], 2*i+1)
-                        qml.RY(input[i%self.input_size], 2*i+1)
-                        qml.RX(input[(i+1)%self.input_size], 2*(i+1))
-                        qml.RY(input[(i+1)%self.input_size], 2*(i+1))
-                        qml.CZ(wires=[2*i+1, 2*(i+1)])
+                    for i in range(self.nqubits // 2):
+                        qml.RX(input[i % self.input_size], 2 * i + 1)
+                        qml.RY(input[i % self.input_size], 2 * i + 1)
+                        qml.RX(input[(i + 1) % self.input_size], 2 * (i + 1))
+                        qml.RY(input[(i + 1) % self.input_size], 2 * (i + 1))
+                        qml.CZ(wires=[2 * i + 1, 2 * (i + 1)])
             self.count += 1
 
     def HEE(self, input):
-        """ Hardware Efficient Embedding """
+        """Hardware Efficient Embedding"""
         for _ in range(self.embedding_nlayers):
             for i in range(self.input_size):
                 qml.RX(input[i], wires=i)
@@ -131,7 +135,7 @@ class QuantumClassifier:
                 qml.CNOT(wires=[i, i + 1])
 
     def CHE(self, input):
-        """ Classically Hard Embedding """
+        """Classically Hard Embedding"""
         for _ in range(self.embedding_nlayers):
             for i in range(self.input_size):
                 qml.Hadamard(wires=i)
@@ -150,20 +154,20 @@ class QuantumClassifier:
         qml.CNOT(wires=[wires[0], wires[1]])
 
     def MPS(self, input):
-        """ Matrix Product State Embedding """
+        """Matrix Product State Embedding"""
         n_wires = self.nqubits
         n_block_wires = 2
         n_params_block = 2
 
         template_weights = []
-        for i in range(self.nqubits-1):
-            template_weights.append([input[i%self.input_size], input[(i+1)%self.input_size]])
+        for i in range(self.nqubits - 1):
+            template_weights.append([input[i % self.input_size], input[(i + 1) % self.input_size]])
 
         for _ in range(self.embedding_nlayers):
             qml.MPS(range(n_wires), n_block_wires, self.MPS_block, n_params_block, template_weights)
 
     def APE(self, input):
-        """ Angle Embedding """
+        """Angle Embedding"""
         qml.AmplitudeEmbedding(
             features=input,
             wires=range(self.nqubits),
@@ -232,7 +236,7 @@ class QuantumClassifier:
             QuantumCircuit: variational quantum circuit
         """
         dev = qml.device("default.qubit", wires=self.nqubits, shots=self.shots)
-        
+
         def func(params, input):
 
             self.embedding(input)
@@ -263,9 +267,7 @@ class QuantumClassifier:
         """
         set_outputs = set(outputs)
 
-        relabel_dict = dict(
-            zip(sorted(list(set_outputs)), range(len(set_outputs)))
-        )
+        relabel_dict = dict(zip(sorted(list(set_outputs)), range(len(set_outputs))))
         outputs_ = np.array([relabel_dict[x] for x in outputs]).astype(int)
         return outputs_
 
@@ -283,26 +285,16 @@ class QuantumClassifier:
         one_hot_outputs = self.to_one_hot()
 
         # Seems better to split into batches
-        predictions = self.softmax(
-            [SOFTMAX_SCALE * circuit(params, x) for x in self.inputs]
-        )
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
 
         cost_value_list = []
 
         if self.cost_type == "MSE":
             for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(
-                    np.sum(
-                        [(l[j] - pd[j])**2 for j in range(self.nlabels)]
-                    )
-                )
+                cost_value_list.append(np.sum([(l[j] - pd[j]) ** 2 for j in range(self.nlabels)]))
         elif self.cost_type == "LOG":
             for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(
-                    -np.sum(
-                        [l[j] * self.np_log(pd[j]) for j in range(self.nlabels)]
-                    )
-                )
+                cost_value_list.append(-np.sum([l[j] * self.np_log(pd[j]) for j in range(self.nlabels)]))
         else:
             pass
 
@@ -350,18 +342,12 @@ class QuantumClassifier:
         circuit = self.make_circuit()
 
         labels = np.arange(self.nlabels).astype(int)
-        predictions = self.softmax(
-            [SOFTMAX_SCALE * circuit(self.params, x) for x in test_inputs * INPUT_SCALE]
-        )
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(self.params, x) for x in test_inputs * INPUT_SCALE])
         predictions = np.round(predictions).astype(int)
         predictions = predictions @ labels  # one-hot to original label
 
-        test_outputs_relabeled = self.relabel(
-            np.array(test_outputs).astype(int).ravel()
-        )
+        test_outputs_relabeled = self.relabel(np.array(test_outputs).astype(int).ravel())
 
-        accuracy = float(
-            np.sum(predictions == test_outputs_relabeled) / len(test_outputs_relabeled)
-        )
+        accuracy = float(np.sum(predictions == test_outputs_relabeled) / len(test_outputs_relabeled))
 
         return accuracy

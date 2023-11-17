@@ -196,6 +196,37 @@ class QuantumClassifier:
             pass
         else:
             pass
+    
+    def TPA(self, params):
+        """Tensor Product Ansatz"""
+        for i in range(self.ansatz_nlayers):
+            for j in range(self.nqubits):
+                qml.RX(params[self.nqubits * i + j], wires=j)
+                qml.RY(params[self.nqubits * i + j], wires=j)
+    
+    def HEA(self, params):
+        """Hardware Efficient Ansatz"""
+        for i in range(self.ansatz_nlayers):
+            for j in range(self.nqubits):
+                qml.RX(params[self.nqubits * i + j], wires=j)
+                qml.RY(params[self.nqubits * i + j], wires=j)
+            for j in range(self.nqubits - 1):
+                qml.CNOT(wires=[j, j + 1])
+    
+    def SEA(self, params):
+        """Strongly Entangling Ansatz"""
+        qml.StronglyEntanglingLayers(params, wires=range(self.nqubits))
+    
+    def ansatz(self, params):
+        """Ansatz templates for a variational circuit."""
+        if self.ansatz_type == "TPA":
+            self.TPA(params)
+        elif self.ansatz_type == "HEA":
+            self.HEA(params)
+        elif self.ansatz_type == "SEA":
+            self.SEA(params)
+        else:
+            pass
 
     def make_initial_params(self):
         """Generate random parameters corresponding to the ansatz_type.
@@ -211,25 +242,6 @@ class QuantumClassifier:
             pass
         return params
 
-    def ansatz(self, params):
-        """Ansatz templates for a variational circuit."""
-        if self.ansatz_type == "TPA":
-            for i in range(self.ansatz_nlayers):
-                for j in range(self.nqubits):
-                    qml.RX(params[self.nqubits * i + j], wires=j)
-                    qml.RY(params[self.nqubits * i + j], wires=j)
-        elif self.ansatz_type == "HEA":
-            for i in range(self.ansatz_nlayers):
-                for j in range(self.nqubits):
-                    qml.RX(params[self.nqubits * i + j], wires=j)
-                    qml.RY(params[self.nqubits * i + j], wires=j)
-                for j in range(self.nqubits - 1):
-                    qml.CNOT(wires=[j, j + 1])
-        elif self.ansatz_type == "SEA":
-            qml.StronglyEntanglingLayers(params, wires=range(self.nqubits))
-        else:
-            pass
-
     def make_circuit(self):
         """Generate a variational quantum circuit. Combine embedding and ansatz.
         Returns:
@@ -243,7 +255,7 @@ class QuantumClassifier:
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
-            return [qml.expval(qml.PauliZ(wires=self.nqubits - i - 1)) for i in range(self.nlabels)]
+            return np.array([qml.expval(qml.PauliZ(wires=self.nqubits - i - 1)) for i in range(self.nlabels)])
 
         circuit = qml.QNode(func, dev)
         return circuit

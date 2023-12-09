@@ -342,6 +342,21 @@ class QuantumClassifier:
         plt.ylabel("Cost")
         plt.legend()
         plt.show()
+    
+    def predict(self, x):
+        """Predict the label of the input.
+        Args:
+            x (array[float]): input data
+        Returns:
+            prediction (int): predicted label
+        """
+        x = np.array(x)
+        circuit = self.make_circuit()
+        labels = np.arange(self.nlabels).astype(int)
+        prediction = self.softmax([SOFTMAX_SCALE * circuit(self.params, x * INPUT_SCALE)])
+        prediction = np.round(prediction).astype(int)
+        prediction = prediction @ labels  # one-hot to original label
+        return prediction
 
     def accuracy(self, test_inputs, test_outputs):
         """Calculate the accuracy of the predictions.
@@ -351,6 +366,9 @@ class QuantumClassifier:
         Returns:
             accuracy (float): the accuracy of the predictions
         """
+        test_inputs = np.array(test_inputs)
+        test_outputs = np.array(test_outputs)
+        
         circuit = self.make_circuit()
 
         labels = np.arange(self.nlabels).astype(int)

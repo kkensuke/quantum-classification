@@ -67,13 +67,7 @@ class QuantumClassifier:
             raise ValueError("Input the correct ansatz type")
 
         if self.embedding_type in {"TPE", "ALE", "HEE", "CHE", "MPS"}:
-            if self.input_size <= self.nqubits:
-                pass
-            else:
-                raise ValueError(
-                    "inputs_size must be less than or equal to  nqubits\
-                                 when embedding_type is TPE, ALE, HEE, CHE, or MPS"
-                )
+            pass
         elif self.embedding_type == "APE":
             if self.input_size <= 2**self.nqubits:
                 pass
@@ -93,9 +87,9 @@ class QuantumClassifier:
     def TPE(self, input):
         """Tensor Product Embedding"""
         for _ in range(self.embedding_nlayers):
-            for i in range(self.input_size):
-                qml.RX(input[i], wires=i)
-                qml.RY(input[i], wires=i)
+            for i in range(self.nqubits):
+                qml.RX(input[i % self.input_size], wires=i)
+                qml.RY(input[i % self.input_size], wires=i)
 
     def ALE(self, input):
         """Alternating Layered Embedding"""
@@ -103,47 +97,47 @@ class QuantumClassifier:
         for _ in range(self.embedding_nlayers):
             if self.count % 2 == 0:
                 for i in range(self.nqubits // 2):
-                    qml.RX(input[i % self.input_size], 2 * i)
-                    qml.RY(input[i % self.input_size], 2 * i)
-                    qml.RX(input[(i + 1) % self.input_size], 2 * i + 1)
-                    qml.RY(input[(i + 1) % self.input_size], 2 * i + 1)
-                    qml.CZ(wires=[2 * i, 2 * i + 1])
+                    qml.RX(input[(2*i) % self.input_size], 2*i)
+                    qml.RY(input[(2*i) % self.input_size], 2*i)
+                    qml.RX(input[(2*i + 1) % self.input_size], 2*i + 1)
+                    qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
+                    qml.CZ(wires=[2*i, 2*i + 1])
             else:
                 if self.nqubits % 2 == 0:
                     for i in range(self.nqubits // 2 - 1):
-                        qml.RX(input[i % self.input_size], 2 * i + 1)
-                        qml.RY(input[i % self.input_size], 2 * i + 1)
-                        qml.RX(input[(i + 1) % self.input_size], 2 * (i + 1))
-                        qml.RY(input[(i + 1) % self.input_size], 2 * (i + 1))
-                        qml.CZ(wires=[2 * i + 1, 2 * (i + 1)])
+                        qml.RX(input[(2*i + 1) % self.input_size], 2*i + 1)
+                        qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
+                        qml.RX(input[(2*(i + 1)) % self.input_size], 2*(i + 1))
+                        qml.RY(input[(2*(i + 1)) % self.input_size], 2*(i + 1))
+                        qml.CZ(wires=[2*i + 1, 2 * (i + 1)])
                 else:
                     for i in range(self.nqubits // 2):
-                        qml.RX(input[i % self.input_size], 2 * i + 1)
-                        qml.RY(input[i % self.input_size], 2 * i + 1)
-                        qml.RX(input[(i + 1) % self.input_size], 2 * (i + 1))
-                        qml.RY(input[(i + 1) % self.input_size], 2 * (i + 1))
-                        qml.CZ(wires=[2 * i + 1, 2 * (i + 1)])
+                        qml.RX(input[(2*i + 1) % self.input_size], 2*i + 1)
+                        qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
+                        qml.RX(input[(2*(i + 1)) % self.input_size], 2*(i + 1))
+                        qml.RY(input[(2*(i + 1)) % self.input_size], 2*(i + 1))
+                        qml.CZ(wires=[2*i + 1, 2 * (i + 1)])
             self.count += 1
-
+    
     def HEE(self, input):
         """Hardware Efficient Embedding"""
         for _ in range(self.embedding_nlayers):
-            for i in range(self.input_size):
-                qml.RX(input[i], wires=i)
-                qml.RY(input[i], wires=i)
+            for i in range(self.nqubits):
+                qml.RX(input[i % self.input_size], wires=i)
+                qml.RY(input[i % self.input_size], wires=i)
             for i in range(self.nqubits - 1):
                 qml.CNOT(wires=[i, i + 1])
 
     def CHE(self, input):
         """Classically Hard Embedding"""
         for _ in range(self.embedding_nlayers):
-            for i in range(self.input_size):
+            for i in range(self.nqubits):
                 qml.Hadamard(wires=i)
-                qml.RZ(input[i], wires=i)
-            for i in range(self.input_size - 1):
-                for j in range(i + 1, self.input_size):
+                qml.RZ(input[i % self.input_size], wires=i)
+            for i in range(self.nqubits - 1):
+                for j in range(i + 1, self.nqubits):
                     qml.CNOT(wires=[i, j])
-                    qml.RZ(input[i] * input[j], wires=j)
+                    qml.RZ(input[i % self.input_size] * input[j % self.input_size], wires=j)
                     qml.CNOT(wires=[i, j])
 
     def MPS_block(self, weights, wires):
@@ -330,10 +324,13 @@ class QuantumClassifier:
 
         # return self.params, self.cost_list
 
-    def draw_circuit(self):
+    def draw_circuit(self, decompose=False):
         params = self.make_initial_params()
         circuit = self.make_circuit()
-        return qml.draw_mpl(circuit, expansion_strategy="device")(params, self.inputs[0])
+        if decompose:
+            return qml.draw_mpl(circuit, expansion_strategy="device")(params, self.inputs[0])
+        else:
+            return qml.draw_mpl(circuit)(params, self.inputs[0])
 
     def plot_cost(self):
         label = f"{self.embedding_type}, {self.ansatz_type}"

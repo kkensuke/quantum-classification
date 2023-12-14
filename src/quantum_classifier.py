@@ -161,7 +161,7 @@ class QuantumClassifier:
             qml.MPS(range(n_wires), n_block_wires, self.MPS_block, n_params_block, template_weights)
 
     def APE(self, input):
-        """Angle Embedding"""
+        """Amplitude Embedding"""
         qml.AmplitudeEmbedding(
             features=input,
             wires=range(self.nqubits),
@@ -297,10 +297,14 @@ class QuantumClassifier:
 
         if self.cost_type == "MSE":
             for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(np.sum([(l[j] - pd[j]) ** 2 for j in range(self.nlabels)]))
+                cost_value_list.append(
+                    np.sum([(l[j] - pd[j]) ** 2 for j in range(self.nlabels)])
+                )
         elif self.cost_type == "LOG":
             for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(-np.sum([l[j] * self.np_log(pd[j]) for j in range(self.nlabels)]))
+                cost_value_list.append(
+                    - np.sum([l[j] * self.np_log(pd[j]) for j in range(self.nlabels)])
+                )
         else:
             pass
 

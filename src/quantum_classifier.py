@@ -79,7 +79,7 @@ class QuantumClassifier:
         else:
             pass
 
-        if self.cost_type in {"MSE", "LOG"}:
+        if self.cost_type in {"MAE", "MSE", "LOG"}:
             pass
         else:
             raise ValueError("cost_type must be MSE or LOG")
@@ -295,7 +295,12 @@ class QuantumClassifier:
 
         cost_value_list = []
 
-        if self.cost_type == "MSE":
+        if self.cost_type == "MAE":
+            for (pd, l) in zip(predictions, one_hot_outputs):
+                cost_value_list.append(
+                    np.sum([np.abs(l[j] - pd[j]) for j in range(self.nlabels)])
+                )
+        elif self.cost_type == "MSE":
             for (pd, l) in zip(predictions, one_hot_outputs):
                 cost_value_list.append(
                     np.sum([(l[j] - pd[j]) ** 2 for j in range(self.nlabels)])
@@ -303,7 +308,7 @@ class QuantumClassifier:
         elif self.cost_type == "LOG":
             for (pd, l) in zip(predictions, one_hot_outputs):
                 cost_value_list.append(
-                    - np.sum([l[j] * self.np_log(pd[j]) for j in range(self.nlabels)])
+                    - np.sum([l[j] * self.np_log(pd[j]) + (1-l[j]) * self.np_log(1-pd[j]) for j in range(self.nlabels)])
                 )
         else:
             pass
@@ -338,7 +343,7 @@ class QuantumClassifier:
 
     def plot_cost(self):
         label = f"{self.embedding_type}, {self.ansatz_type}"
-        plt.semilogy(self.cost_list, label=label)
+        plt.plot(self.cost_list, label=label)
         plt.xlabel("Steps")
         plt.ylabel("Cost")
         plt.legend()

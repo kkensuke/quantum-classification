@@ -61,7 +61,7 @@ class QuantumClassifier:
         else:
             raise ValueError("Input the correct embedding type")
 
-        if self.ansatz_type in {"TPA", "HEA", "SEA"}:
+        if self.ansatz_type in {"TPA", "ALA", "HEA", "SEA"}:
             pass
         else:
             raise ValueError("Input the correct ansatz type")
@@ -103,7 +103,10 @@ class QuantumClassifier:
                     qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
                     qml.CZ(wires=[2*i, 2*i + 1])
             else:
-                if self.nqubits % 2 == 0:
+                if self.nqubits == 2:
+                    qml.RX(input[1], 1)
+                    qml.RY(input[1], 1)
+                elif self.nqubits % 2 == 0:
                     for i in range(self.nqubits // 2 - 1):
                         qml.RX(input[(2*i + 1) % self.input_size], 2*i + 1)
                         qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
@@ -198,6 +201,37 @@ class QuantumClassifier:
                 qml.RX(params[self.nqubits * i + j], wires=j)
                 qml.RY(params[self.nqubits * i + j], wires=j)
     
+    def ALA(self, params):
+        """Alternating Layered Ansatz"""
+        self.count = 0
+        for i in range(self.ansatz_nlayers):
+            if self.count % 2 == 0:
+                for j in range(self.nqubits // 2):
+                    qml.RX(params[self.nqubits*i + 2*j], 2*j)
+                    qml.RY(params[self.nqubits*i + 2*j], 2*j)
+                    qml.RX(params[self.nqubits*i + 2*j + 1], 2*j + 1)
+                    qml.RY(params[self.nqubits*i + 2*j + 1], 2*j + 1)
+                    qml.CZ(wires=[2*j, 2*j + 1])
+            else:
+                if self.nqubits == 2:
+                    qml.RX(params[1], 1)
+                    qml.RY(params[1], 1)
+                elif self.nqubits % 2 == 0:
+                    for j in range(self.nqubits // 2 - 1):
+                        qml.RX(params[self.nqubits*i + 2*j + 1], 2*j + 1)
+                        qml.RY(params[self.nqubits*i + 2*j + 1], 2*j + 1)
+                        qml.RX(params[self.nqubits*i + 2*(j + 1)], 2*(j + 1))
+                        qml.RY(params[self.nqubits*i + 2*(j + 1)], 2*(j + 1))
+                        qml.CZ(wires=[2*j + 1, 2 * (j + 1)])
+                else:
+                    for j in range(self.nqubits // 2):
+                        qml.RX(params[self.nqubits*i + 2*j + 1], 2*j + 1)
+                        qml.RY(params[self.nqubits*i + 2*j + 1], 2*j + 1)
+                        qml.RX(params[self.nqubits*i + 2*(j + 1)], 2*(j + 1))
+                        qml.RY(params[self.nqubits*i + 2*(j + 1)], 2*(j + 1))
+                        qml.CZ(wires=[2*j + 1, 2 * (j + 1)])
+            self.count += 1
+    
     def HEA(self, params):
         """Hardware Efficient Ansatz"""
         for i in range(self.ansatz_nlayers):
@@ -215,6 +249,8 @@ class QuantumClassifier:
         """Ansatz templates for a variational circuit."""
         if self.ansatz_type == "TPA":
             self.TPA(params)
+        elif self.ansatz_type == "ALA":
+            self.ALA(params)
         elif self.ansatz_type == "HEA":
             self.HEA(params)
         elif self.ansatz_type == "SEA":
@@ -227,7 +263,7 @@ class QuantumClassifier:
         Returns:
             params (array[float]): array of parameters
         """
-        if self.ansatz_type in ("TPA", "HEA"):
+        if self.ansatz_type in ("TPA", "ALA", "HEA"):
             params = np.random.uniform(0, np.pi, size=self.nqubits * self.ansatz_nlayers)
         elif self.ansatz_type == "SEA":
             shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)

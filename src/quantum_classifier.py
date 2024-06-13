@@ -16,6 +16,7 @@ class QuantumClassifier:
             ansatz_nlayers,
             embedding_type,
             ansatz_type,
+            initialization_type,
             cost_type,
             shots=None,
             stepsize=0.01,
@@ -50,6 +51,7 @@ class QuantumClassifier:
         self.ansatz_nlayers = ansatz_nlayers
         self.embedding_type = embedding_type
         self.ansatz_type = ansatz_type
+        self.initialization_type = initialization_type
         self.cost_type = cost_type
         self.shots = shots
         self.stepsize = stepsize
@@ -78,6 +80,11 @@ class QuantumClassifier:
                 )
         else:
             pass
+        
+        if initialization_type in ("Zero", "Small", "Random", "Gaussian"):
+            pass
+        else:
+            raise ValueError("initialization_method must be 'Zero', 'Small', 'Random', or 'Gaussian'")
 
         if self.cost_type in {"MAE", "MSE", "LOG"}:
             pass
@@ -257,13 +264,43 @@ class QuantumClassifier:
         Returns:
             params (array[float]): array of parameters
         """
-        if self.ansatz_type in ("TPA", "ALA", "HEA"):
-            params = np.random.uniform(0, np.pi, size=self.nqubits * self.ansatz_nlayers)
-        elif self.ansatz_type == "SEA":
-            shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
-            params = np.random.random(size=shape)
+        if self.initialization_type == "Zero":
+            params = np.zeros(2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
+            if self.ansatz_type in ("TPA", "ALA", "HEA"):
+                params = np.zeros(2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
+            elif self.ansatz_type == "SEA":
+                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
+                params = np.zeros(shape, requires_grad=True)
+            else:
+                pass
+        elif self.initialization_type == "Small":
+            params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
+            if self.ansatz_type in ("TPA", "ALA", "HEA"):
+                params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
+            elif self.ansatz_type == "SEA":
+                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
+                params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=shape, requires_grad=True)
+            else:
+                pass
+        elif self.initialization_type == "Random":
+            if self.ansatz_type in ("TPA", "ALA", "HEA"):
+                params = np.random.uniform(0, 2*np.pi, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
+            elif self.ansatz_type == "SEA":
+                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
+                params = np.random.uniform(0, 2*np.pi, size=shape)
+            else:
+                pass
+        elif self.initialization_type == "Gaussian":
+            if self.ansatz_type in ("TPA", "ALA", "HEA"):
+                params = np.random.normal(0, np.pi/self.nqubits/self.ansatz_nlayers, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
+            elif self.ansatz_type == "SEA":
+                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
+                params = np.random.normal(0, np.pi/self.nqubits/self.ansatz_nlayers, size=shape)
+            else:
+                pass
         else:
             pass
+        
         return params
 
     def make_circuit(self):

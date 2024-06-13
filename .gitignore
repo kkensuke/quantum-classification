@@ -1,8 +1,9 @@
 memo.txt
 data-reuploading/
 quantum_classifier_.*
-quantum_classifier_a.*
+quantum_classifier_l_y.*
 quantum_classifier_oneclass.*
 quantum_classifier_3classes.ipynb
 data.ipynb
 iris_scaled.csv
+rotosolve*

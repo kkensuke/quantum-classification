@@ -103,10 +103,7 @@ class QuantumClassifier:
                     qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
                     qml.CZ(wires=[2*i, 2*i + 1])
             else:
-                if self.nqubits == 2:
-                    qml.RX(input[1], 1)
-                    qml.RY(input[1], 1)
-                elif self.nqubits % 2 == 0:
+                if self.nqubits % 2 == 0:
                     for i in range(self.nqubits // 2 - 1):
                         qml.RX(input[(2*i + 1) % self.input_size], 2*i + 1)
                         qml.RY(input[(2*i + 1) % self.input_size], 2*i + 1)
@@ -213,10 +210,7 @@ class QuantumClassifier:
                     qml.RY(params[self.nqubits*i + 2*j + 1], 2*j + 1)
                     qml.CZ(wires=[2*j, 2*j + 1])
             else:
-                if self.nqubits == 2:
-                    qml.RX(params[1], 1)
-                    qml.RY(params[1], 1)
-                elif self.nqubits % 2 == 0:
+                if self.nqubits % 2 == 0:
                     for j in range(self.nqubits // 2 - 1):
                         qml.RX(params[self.nqubits*i + 2*j + 1], 2*j + 1)
                         qml.RY(params[self.nqubits*i + 2*j + 1], 2*j + 1)

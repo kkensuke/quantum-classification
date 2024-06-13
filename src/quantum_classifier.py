@@ -35,6 +35,7 @@ class QuantumClassifier:
             ansatz_type (str): the types of ansatz circuit;
                 Tensor Product Ansatz (TPA), Hardware Efficient Ansatz (HEA),
                 Strongly Entangling Ansatz (SEA).
+            initialization_type (str): the types of initialization;
             cost_type (str): the types of cost function; Mean Squared Error (MSE), Cross Entropy (LOG)
             shots (int): the number of shots
             stepsize (float): the stepsize of optimization

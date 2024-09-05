@@ -4,6 +4,8 @@ quantum_classifier_.*
 quantum_classifier_l_y.*
 quantum_classifier_oneclass.*
 quantum_classifier_MBL.*
+quantum_classifier_fixedgate.*
+quantum_classifier_reuploading.*
 data.ipynb
 iris_scaled.csv
 rotosolve*

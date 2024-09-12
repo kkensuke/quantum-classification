@@ -57,7 +57,7 @@ class QuantumClassifier:
         self.shots = shots
         self.stepsize = stepsize
         self.steps = steps
-        self.params = None        
+        self.params = None
         
         valid_embedding_types = {"TPE", "ALE", "HEE", "CHE", "MPS", "APE", "NON"}
         valid_ansatz_types = {"TPA", "ALA", "HEA", "SEA"}
@@ -306,10 +306,10 @@ class QuantumClassifier:
         outputs_ = np.array([relabel_dict[x] for x in outputs]).astype(int)
         return outputs_
 
-    def to_one_hot(self):
-        return np.eye(self.nlabels)[self.relabel(self.outputs)]
+    def to_one_hot(self, outputs):
+        return np.eye(self.nlabels)[self.relabel(outputs)]
     
-    def cost(self, params):
+    def cost(self, params, inputs, outputs):
         """Cost function of the variational circuit.
         Args:
             params (array[float]): array of ansatz parameters
@@ -317,8 +317,8 @@ class QuantumClassifier:
             cost (float)
         """
         circuit = self.make_circuit()
-        one_hot_outputs = self.to_one_hot()
-        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x * INPUT_SCALE) for x in self.inputs])
+        one_hot_outputs = self.to_one_hot(outputs)
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x * INPUT_SCALE) for x in inputs])
 
         if self.cost_type == "MAE":
             cost = np.mean(np.abs(one_hot_outputs - predictions))
@@ -342,12 +342,13 @@ class QuantumClassifier:
             QNGOptimizer 	Optimizer with adaptive learning rate, via calculation of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor. (specific to quantum optimization.)
             RMSPropOptimizer 	Root mean squared propagation optimizer.
         """
-        opt = qml.AdamOptimizer(self.stepsize)
+        opt = qml.AdamOptimizer(stepsize=self.stepsize)
+        cost = lambda params: self.cost(params, self.inputs, self.outputs)
 
         self.params = self.make_initial_params()
         self.cost_list = []
         for _ in range(self.steps):
-            self.params, cost_temp = opt.step_and_cost(self.cost, self.params)
+            self.params, cost_temp = opt.step_and_cost(cost, self.params)
             self.cost_list.append(cost_temp)
 
         # return self.params, self.cost_list
@@ -356,7 +357,7 @@ class QuantumClassifier:
         params = self.make_initial_params()
         circuit = self.make_circuit()
         if decompose:
-            return qml.draw_mpl(circuit, expansion_strategy="device")(params, self.inputs[0])
+            return qml.draw_mpl(circuit, level="device")(params, self.inputs[0])
         else:
             return qml.draw_mpl(circuit)(params, self.inputs[0])
 
@@ -364,7 +365,7 @@ class QuantumClassifier:
         label = f"{self.embedding_type}, {self.ansatz_type}"
         plt.plot(self.cost_list, label=label)
         plt.xlabel("Steps")
-        plt.ylabel("Cost")
+        plt.ylabel(f"{self.cost_type}")
         plt.legend()
         plt.show()
     

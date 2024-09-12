@@ -43,7 +43,7 @@ class QuantumClassifier:
         """
         # there are degrees of freedom in how to convert the inputs into angles
         # np.arcsin(input[i]) or np.arccos(input[i]**2) in ref. QCL
-        self.inputs = np.array(inputs * INPUT_SCALE)
+        self.inputs = np.array(inputs)
         self.outputs = np.array(outputs).astype(int).ravel()
         self.input_size = len(self.inputs[0])
         self.nlabels = len(set(self.outputs))
@@ -57,40 +57,25 @@ class QuantumClassifier:
         self.shots = shots
         self.stepsize = stepsize
         self.steps = steps
-        self.params = None
-
-        if self.embedding_type in {"TPE", "ALE", "HEE", "CHE", "MPS", "APE", "NON"}:
-            pass
-        else:
-            raise ValueError("Input the correct embedding type")
-
-        if self.ansatz_type in {"TPA", "ALA", "HEA", "SEA"}:
-            pass
-        else:
-            raise ValueError("Input the correct ansatz type")
-
-        if self.embedding_type in {"TPE", "ALE", "HEE", "CHE", "MPS"}:
-            pass
-        elif self.embedding_type == "APE":
-            if self.input_size <= 2**self.nqubits:
-                pass
-            else:
-                raise ValueError(
-                    "inputs_size must be less than or equal to \
-                                 2^nqubits when embedding_type is APE"
-                )
-        else:
-            pass
+        self.params = None        
         
-        if initialization_type in ("Zero", "Small", "Random", "Gaussian"):
-            pass
-        else:
-            raise ValueError("initialization_method must be 'Zero', 'Small', 'Random', or 'Gaussian'")
+        valid_embedding_types = {"TPE", "ALE", "HEE", "CHE", "MPS", "APE", "NON"}
+        valid_ansatz_types = {"TPA", "ALA", "HEA", "SEA"}
+        valid_initialization_types = {"zero", "small", "random", "gaussian"}
+        valid_cost_types = {"MAE", "MSE", "LOG"}
 
-        if self.cost_type in {"MAE", "MSE", "LOG"}:
-            pass
-        else:
-            raise ValueError("cost_type must be MSE or LOG")
+        if self.embedding_type not in valid_embedding_types:
+            raise ValueError(f"Invalid embedding type. Must be one of {valid_embedding_types}")
+        if self.ansatz_type not in valid_ansatz_types:
+            raise ValueError(f"Invalid ansatz type. Must be one of {valid_ansatz_types}")
+        if self.initialization_type not in valid_initialization_types:
+            raise ValueError(f"Invalid initialization type. Must be one of {valid_initialization_types}")
+        if self.cost_type not in valid_cost_types:
+            raise ValueError(f"Invalid cost type. Must be one of {valid_cost_types}")
+
+        if self.embedding_type == "APE" and self.input_size > 2**self.nqubits:
+            raise ValueError("inputs_size must be less than or equal to 2^nqubits when embedding_type is APE")
+
 
     def TPE(self, input):
         """Tensor Product Embedding"""
@@ -259,49 +244,28 @@ class QuantumClassifier:
             self.SEA(params)
         else:
             pass
-
+    
     def make_initial_params(self):
         """Generate random parameters corresponding to the ansatz_type.
         Returns:
             params (array[float]): array of parameters
         """
-        if self.initialization_type == "Zero":
-            params = np.zeros(2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
-            if self.ansatz_type in ("TPA", "ALA", "HEA"):
-                params = np.zeros(2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
-            elif self.ansatz_type == "SEA":
-                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
-                params = np.zeros(shape, requires_grad=True)
-            else:
-                pass
-        elif self.initialization_type == "Small":
-            params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
-            if self.ansatz_type in ("TPA", "ALA", "HEA"):
-                params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
-            elif self.ansatz_type == "SEA":
-                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
-                params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=shape, requires_grad=True)
-            else:
-                pass
-        elif self.initialization_type == "Random":
-            if self.ansatz_type in ("TPA", "ALA", "HEA"):
-                params = np.random.uniform(0, 2*np.pi, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
-            elif self.ansatz_type == "SEA":
-                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
-                params = np.random.uniform(0, 2*np.pi, size=shape)
-            else:
-                pass
-        elif self.initialization_type == "Gaussian":
-            if self.ansatz_type in ("TPA", "ALA", "HEA"):
-                params = np.random.normal(0, np.pi/self.nqubits/self.ansatz_nlayers, size=2 * self.nqubits * self.ansatz_nlayers, requires_grad=True)
-            elif self.ansatz_type == "SEA":
-                shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
-                params = np.random.normal(0, np.pi/self.nqubits/self.ansatz_nlayers, size=shape)
-            else:
-                pass
+        if self.ansatz_type in ("TPA", "ALA", "HEA"):
+            param_shape = 2 * self.nqubits * self.ansatz_nlayers
         else:
-            pass
-        
+            param_shape = qml.StronglyEntanglingLayers.shape(self.ansatz_nlayers, n_wires=self.nqubits)
+
+        if self.initialization_type == "zero":
+            params = np.zeros(param_shape, requires_grad=True)
+        elif self.initialization_type == "small":
+            params = np.random.uniform(0, np.pi/self.nqubits/self.ansatz_nlayers, size=param_shape, requires_grad=True)
+        elif self.initialization_type == "random":
+            params = np.random.uniform(0, 2*np.pi, size=param_shape, requires_grad=True)
+        elif self.initialization_type == "gaussian":
+            params = np.random.normal(0, np.pi/self.nqubits/self.ansatz_nlayers, size=param_shape, requires_grad=True)
+        else:
+            raise ValueError("Unknown initialization_type")
+
         return params
 
     def make_circuit(self):
@@ -309,17 +273,18 @@ class QuantumClassifier:
         Returns:
             QuantumCircuit: variational quantum circuit
         """
-        dev = qml.device("default.qubit", wires=self.nqubits, shots=self.shots)
+        dev = qml.device("lightning.qubit", wires=self.nqubits, shots=self.shots)
+        # dev = qml.device("default.qubit", wires=self.nqubits, shots=self.shots)
 
         def func(params, input):
-
             self.embedding(input)
             qml.Barrier(only_visual=True, wires=range(self.nqubits))
             self.ansatz(params)
 
             return np.array([qml.expval(qml.PauliZ(wires=self.nqubits - i - 1)) for i in range(self.nlabels)])
 
-        circuit = qml.QNode(func, dev)
+        circuit = qml.QNode(func, dev, diff_method="adjoint")
+        # circuit = qml.QNode(func, dev)
         return circuit
 
     @staticmethod
@@ -328,10 +293,6 @@ class QuantumClassifier:
         x -= x.max(axis=1, keepdims=True)  # to avoid exp overflow
         x_exp = np.exp(x)
         return x_exp / np.sum(x_exp, axis=1, keepdims=True)
-
-    @staticmethod
-    def np_log(x):  # avoid log(0)
-        return np.log(np.clip(a=x, a_min=1e-10, a_max=1e10))
 
     @staticmethod
     def relabel(outputs):
@@ -347,7 +308,7 @@ class QuantumClassifier:
 
     def to_one_hot(self):
         return np.eye(self.nlabels)[self.relabel(self.outputs)]
-
+    
     def cost(self, params):
         """Cost function of the variational circuit.
         Args:
@@ -357,43 +318,33 @@ class QuantumClassifier:
         """
         circuit = self.make_circuit()
         one_hot_outputs = self.to_one_hot()
-
-        # Seems better to split into batches
-        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x) for x in self.inputs])
-
-        cost_value_list = []
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(params, x * INPUT_SCALE) for x in self.inputs])
 
         if self.cost_type == "MAE":
-            for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(
-                    np.sum([np.abs(l[j] - pd[j]) for j in range(self.nlabels)])
-                )
+            cost = np.mean(np.abs(one_hot_outputs - predictions))
         elif self.cost_type == "MSE":
-            for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(
-                    np.sum([(l[j] - pd[j]) ** 2 for j in range(self.nlabels)])
-                )
+            cost = np.mean((one_hot_outputs - predictions) ** 2)
         elif self.cost_type == "LOG":
-            for (pd, l) in zip(predictions, one_hot_outputs):
-                cost_value_list.append(
-                    - np.sum([l[j] * self.np_log(pd[j]) + (1-l[j]) * self.np_log(1-pd[j]) for j in range(self.nlabels)])
-                )
+            cost = -np.mean(one_hot_outputs * np.log(predictions) + (1 - one_hot_outputs) * np.log(1 - predictions))
         else:
-            pass
+            raise ValueError("Invalid cost_type")
 
-        cost = np.mean(np.array(cost_value_list))
         return cost
 
     def optimize(self):
-        """Optimize the variational circuit."""
-
-        if self.params is None:
-            self.params = self.make_initial_params()
-        else:
-            pass
-
+        """Optimize the variational circuit.
+        Optimizers:
+            Adagrad Optimizer 	Gradient descent optimizer with past-gradient-dependent learning rate in each dimension.
+            AdamOptimizer 	Gradient descent optimizer with adaptive learning rate, first and second moment.
+            GradientDescentOptimizer 	Basic gradient descent optimizer.
+            Momentum Optimizer 	Gradient descent optimizer with momentum
+            NesterovMomentumOptimizer 	Gradient descent optimizer with Nesterov momentum.
+            QNGOptimizer 	Optimizer with adaptive learning rate, via calculation of the diagonal or block-diagonal approximation to the Fubini-Study metric tensor. (specific to quantum optimization.)
+            RMSPropOptimizer 	Root mean squared propagation optimizer.
+        """
         opt = qml.AdamOptimizer(self.stepsize)
 
+        self.params = self.make_initial_params()
         self.cost_list = []
         for _ in range(self.steps):
             self.params, cost_temp = opt.step_and_cost(self.cost, self.params)
@@ -429,7 +380,7 @@ class QuantumClassifier:
         labels = np.arange(self.nlabels).astype(int)
         prediction = self.softmax([SOFTMAX_SCALE * circuit(self.params, x * INPUT_SCALE)])
         prediction = np.round(prediction).astype(int)
-        prediction = prediction @ labels  # one-hot to original label
+        prediction = prediction @ labels # one-hot to original label
         return prediction
 
     def accuracy(self, test_inputs, test_outputs):
@@ -446,7 +397,7 @@ class QuantumClassifier:
         circuit = self.make_circuit()
 
         labels = np.arange(self.nlabels).astype(int)
-        predictions = self.softmax([SOFTMAX_SCALE * circuit(self.params, x) for x in test_inputs * INPUT_SCALE])
+        predictions = self.softmax([SOFTMAX_SCALE * circuit(self.params, x * INPUT_SCALE) for x in test_inputs])
         predictions = np.round(predictions).astype(int)
         predictions = predictions @ labels  # one-hot to original label
 
